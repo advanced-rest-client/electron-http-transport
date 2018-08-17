@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=yes">
+    <title>api-request-editor demo</title>
+    <script src="../bower_components/webcomponentsjs/webcomponents-loader.js"></script>
+    <link rel="import" href="../bower_components/shadycss/apply-shim.html">
+    <link rel="import" href="../bower_components/polymer/lib/elements/custom-style.html">
+    <link rel="import" href="../bower_components/polymer/lib/elements/dom-bind.html">
+    <link rel="import" href="../bower_components/iron-demo-helpers/demo-pages-shared-styles.html">
+    <link rel="import" href="../bower_components/iron-demo-helpers/demo-snippet.html">
+    <link rel="import" href="../bower_components/paper-styles/typography.html">
+    <link rel="import" href="../bower_components/paper-styles/shadow.html">
+    <link rel="import" href="../bower_components/paper-input/paper-input.html">
+    <link rel="import" href="../bower_components/paper-input/paper-textarea.html">
+    <link rel="import" href="../bower_components/paper-button/paper-button.html">
+    <link rel="import" href="../electron-http-transport.html">
+    <style>
+    </style>
+    <custom-style>
+      <style is="custom-style" include="demo-pages-shared-styles">
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #f5f5f5;
+      }
+
+      h1 {
+        @apply --paper-font-headline;
+      }
+
+      h2 {
+        @apply --paper-font-title;
+      }
+
+      .card {
+        margin-top: 24px;
+        padding: 12px;
+        @apply --shadow-elevation-2dp;
+        background-color: #fff;
+      }
+
+      .log {
+        word-wrap: break-word;
+      }
+      </style>
+    </custom-style>
+  </head>
+  <body>
+    <dom-bind id="demo">
+      <template is="dom-bind">
+        <div class="centered" role="main">
+          <electron-http-transport></electron-http-transport>
+
+          <section class="vertical-section-container card">
+            <h1>electron-http-transport demo app</h1>
+            <paper-input label="Request URL" value="{{url}}"></paper-input>
+            <paper-input label="Request method" value="{{method}}"></paper-input>
+            <paper-textarea label="Request headers" value="{{headers}}"></paper-textarea>
+            <paper-textarea label="Request body" value="{{body}}"></paper-textarea>
+            <paper-button raised on-click="send">Send request</paper-button>
+          </section>
+
+          <template is="dom-if" if="[[hasLogs]]">
+            <section class="vertical-section-container card">
+              <h2>Execution log</h2>
+              <template is="dom-repeat" items="[[logs]]">
+                <p class="log">[[item.type]]: [[item.detail]]</p>
+              </template>
+            </section>
+          </template>
+        </div>
+      </template>
+    </dom-bind>
+    <script>
+    (function(app) {
+      const {ArcPreferencesProxy} = require('@advanced-rest-client/arc-electron-preferences/renderer');
+      const proxy = new ArcPreferencesProxy();
+      proxy.observe();
+      app.url = 'https://google.com?q=advanced-rest-client';
+      app.method = 'GET';
+      app.headers = 'x-test: true';
+      app.lastRequestId = 0;
+      app.logs = [];
+      app.hasLogs = false;
+      app.send = function() {
+        app.set('logs', []);
+        app.hasLogs = false;
+        const detail = {
+          id: (++app.lastRequestId),
+          url: app.url,
+          method: app.method,
+          headers: app.headers,
+          payload: app.body
+        };
+        const e = new CustomEvent('transport-request', {
+          bubbles: true,
+          cancelable: true,
+          detail
+        });
+        document.body.dispatchEvent(e);
+      };
+
+      app._logEvent = function(e) {
+        app.push('logs', {
+          type: e.type,
+          detail: JSON.stringify(e.detail)
+        });
+        if (!app.hasLogs) {
+          app.hasLogs = true;
+        }
+      };
+
+      window.addEventListener('request-load-start', app._logEvent);
+      window.addEventListener('request-first-byte-received', app._logEvent);
+      window.addEventListener('request-load-end', app._logEvent);
+      window.addEventListener('before-redirect', app._logEvent);
+      window.addEventListener('headers-received', app._logEvent);
+      window.addEventListener('response-ready', app._logEvent);
+      window.addEventListener('report-response', app._logEvent);
+    })(document.getElementById('demo'));
+  </script>
+  </body>
+</html>
