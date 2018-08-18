@@ -19,7 +19,7 @@
   },
   "private": false,
   "dependencies": {
-    "@advanced-rest-client/electron-request": "^1.0.0-rc2",
+    "@advanced-rest-client/electron-request": "^1.0.0-rc4",
     "electron-log": "^2.2.16"
   },
   "scripts": {
