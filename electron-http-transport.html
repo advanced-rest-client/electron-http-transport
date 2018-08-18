@@ -6,14 +6,6 @@ const {SocketRequest} = require('@advanced-rest-client/electron-request');
  * A web comonent to work with @advanced-rest-client/electron-request
  * node package in web components environment
  *
- * ## Styling
- *
- * `<electron-http-transport>` provides the following custom properties and mixins for styling:
- *
- * Custom property | Description | Default
- * ----------------|-------------|----------
- * `--electron-http-transport` | Mixin applied to this elment | `{}`
- *
  * @customElement
  * @memberof LogicElements
  */
@@ -118,7 +110,9 @@ class ElectronHttpTransport extends HTMLElement {
       bubbles: true,
       composed: true,
       cancelable: true,
-      detail: {}
+      detail: {
+        settings: ['requestDefaultTimeout']
+      }
     });
     this.dispatchEvent(e);
     if (e.defaultPrevented) {
@@ -295,7 +289,12 @@ class ElectronHttpTransport extends HTMLElement {
     });
     this._processResponse(id, data, request);
   }
-
+  /**
+   * Processes response data and creates ARC response object.
+   * @param {String} id Request ID
+   * @param {Object} data Response data
+   * @param {Object} requestInfo Request data
+   */
   _processResponse(id, data, requestInfo) {
     const detail = {
       isXhr: false,
@@ -373,7 +372,11 @@ class ElectronHttpTransport extends HTMLElement {
     }
     return value;
   }
-
+  /**
+   * Creates HAR 1.2 object from timing data
+   * @param {Object} stats
+   * @return {Object}
+   */
   _cleanTimings(stats) {
     const result = {
       dns: stats.dns || -1,
@@ -385,7 +388,13 @@ class ElectronHttpTransport extends HTMLElement {
     };
     return result;
   }
-
+  /**
+   * Dispatches `response-ready` event with request data.
+   * If the event is not caneled then it dispatches `report-response`
+   * event.
+   *
+   * @param {Object} detail The request detail
+   */
   _beforeResponse(detail) {
     const e = new CustomEvent('response-ready', {
       composed: true,
