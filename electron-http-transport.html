@@ -66,6 +66,9 @@ class ElectronHttpTransport extends HTMLElement {
   }
 
   _onTransportRequested(e) {
+    if (e.defaultPrevented) {
+      return;
+    }
     e.preventDefault();
     e.stopPropagation();
     this.run(e.detail);
@@ -274,7 +277,7 @@ class ElectronHttpTransport extends HTMLElement {
     this._processResponse(id, response, request);
   }
 
-  _errorHandler(id, cause) {
+  _errorHandler(id, cause, request, response) {
     const info = this._connections[id];
     if (info) {
       this._removeConnectionHandlers(info.connection);
@@ -283,10 +286,14 @@ class ElectronHttpTransport extends HTMLElement {
     if (info && info.aborted) {
       return;
     }
-    let data = {
+    if (!response) {
+      response = {};
+    }
+    let data = Object.assign({}, response, {
+      isError: true,
       error: cause
-    };
-    this._processResponse(id, data, {});
+    });
+    this._processResponse(id, data, request);
   }
 
   _processResponse(id, data, requestInfo) {
@@ -306,10 +313,12 @@ class ElectronHttpTransport extends HTMLElement {
       const stats = this._cleanTimings(data.stats);
       detail.isError = false;
       detail.response = data;
-      detail.sourceMessage = data.sentHttpMessage;
+      detail.sentHttpMessage = data.sentHttpMessage;
       detail.loadingTime = this._computeLoadingTime(stats);
       detail.timings = stats;
       detail.auth = data.auth;
+      delete detail.response.sentHttpMessage;
+      delete detail.request.sentHttpMessage;
     }
     detail.id = id;
     this._beforeResponse(detail);
@@ -330,6 +339,7 @@ class ElectronHttpTransport extends HTMLElement {
     set.forEach((item) => {
       result.redirects.push(item);
       result.timings.push(item.stats);
+      delete item.stats;
     });
     return result;
   }
