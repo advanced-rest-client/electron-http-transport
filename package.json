@@ -1,6 +1,6 @@
 {
-  "name": "@api-components/electron-http-transport",
-  "description": "A web comonent to work with @advanced-rest-client/electron-request node package in web components environment",
+  "name": "@advanced-rest-client/electron-http-transport",
+  "description": "A web component to work with @advanced-rest-client/electron-request node package in web components environment",
   "version": "2.0.0-preview",
   "license": "Apache-2.0",
   "main": "electron-http-transport.html",
@@ -14,7 +14,8 @@
     "chai": "^4.1.2",
     "electron": "^2.0.7",
     "electron-mocha": "^6.0.4",
-    "mocha": "^4.1.0"
+    "mocha": "^4.1.0",
+    "ssl-root-cas": "^1.2.5"
   },
   "private": false,
   "dependencies": {
@@ -22,7 +23,8 @@
     "electron-log": "^2.2.16"
   },
   "scripts": {
-    "test": "electron-mocha test/*.test.js",
+    "test": "electron-mocha --renderer --preload bower_components/webcomponentsjs/webcomponents-loader.js test/*.test.js",
+    "test-request": "electron-mocha --renderer --interactive --preload bower_components/webcomponentsjs/webcomponents-loader.js test/request.test.js",
     "demo": "electron ./demo/main",
     "update-types": "gen-typescript-declarations --deleteExisting --outDir ."
   },

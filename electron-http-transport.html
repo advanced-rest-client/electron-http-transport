@@ -6,14 +6,6 @@ const {SocketRequest} = require('@advanced-rest-client/electron-request');
  * A web comonent to work with @advanced-rest-client/electron-request
  * node package in web components environment
  *
- * ## Styling
- *
- * `<electron-http-transport>` provides the following custom properties and mixins for styling:
- *
- * Custom property | Description | Default
- * ----------------|-------------|----------
- * `--electron-http-transport` | Mixin applied to this elment | `{}`
- *
  * @customElement
  * @memberof LogicElements
  */
@@ -66,6 +58,9 @@ class ElectronHttpTransport extends HTMLElement {
   }
 
   _onTransportRequested(e) {
+    if (e.defaultPrevented) {
+      return;
+    }
     e.preventDefault();
     e.stopPropagation();
     this.run(e.detail);
@@ -115,7 +110,9 @@ class ElectronHttpTransport extends HTMLElement {
       bubbles: true,
       composed: true,
       cancelable: true,
-      detail: {}
+      detail: {
+        settings: ['requestDefaultTimeout']
+      }
     });
     this.dispatchEvent(e);
     if (e.defaultPrevented) {
@@ -274,7 +271,7 @@ class ElectronHttpTransport extends HTMLElement {
     this._processResponse(id, response, request);
   }
 
-  _errorHandler(id, cause) {
+  _errorHandler(id, cause, request, response) {
     const info = this._connections[id];
     if (info) {
       this._removeConnectionHandlers(info.connection);
@@ -283,12 +280,21 @@ class ElectronHttpTransport extends HTMLElement {
     if (info && info.aborted) {
       return;
     }
-    let data = {
+    if (!response) {
+      response = {};
+    }
+    let data = Object.assign({}, response, {
+      isError: true,
       error: cause
-    };
-    this._processResponse(id, data, {});
+    });
+    this._processResponse(id, data, request);
   }
-
+  /**
+   * Processes response data and creates ARC response object.
+   * @param {String} id Request ID
+   * @param {Object} data Response data
+   * @param {Object} requestInfo Request data
+   */
   _processResponse(id, data, requestInfo) {
     const detail = {
       isXhr: false,
@@ -306,10 +312,12 @@ class ElectronHttpTransport extends HTMLElement {
       const stats = this._cleanTimings(data.stats);
       detail.isError = false;
       detail.response = data;
-      detail.sourceMessage = data.sentHttpMessage;
+      detail.sentHttpMessage = data.sentHttpMessage;
       detail.loadingTime = this._computeLoadingTime(stats);
       detail.timings = stats;
       detail.auth = data.auth;
+      delete detail.response.sentHttpMessage;
+      delete detail.request.sentHttpMessage;
     }
     detail.id = id;
     this._beforeResponse(detail);
@@ -330,6 +338,7 @@ class ElectronHttpTransport extends HTMLElement {
     set.forEach((item) => {
       result.redirects.push(item);
       result.timings.push(item.stats);
+      delete item.stats;
     });
     return result;
   }
@@ -363,7 +372,11 @@ class ElectronHttpTransport extends HTMLElement {
     }
     return value;
   }
-
+  /**
+   * Creates HAR 1.2 object from timing data
+   * @param {Object} stats
+   * @return {Object}
+   */
   _cleanTimings(stats) {
     const result = {
       dns: stats.dns || -1,
@@ -375,7 +388,13 @@ class ElectronHttpTransport extends HTMLElement {
     };
     return result;
   }
-
+  /**
+   * Dispatches `response-ready` event with request data.
+   * If the event is not caneled then it dispatches `report-response`
+   * event.
+   *
+   * @param {Object} detail The request detail
+   */
   _beforeResponse(detail) {
     const e = new CustomEvent('response-ready', {
       composed: true,
