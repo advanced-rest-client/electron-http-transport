@@ -1,5 +1,4 @@
 <script>
-const {SocketRequest} = require('@advanced-rest-client/electron-request');
 /**
  * `electron-http-transport`
  *
@@ -9,6 +8,7 @@ const {SocketRequest} = require('@advanced-rest-client/electron-request');
  * @customElement
  * @memberof LogicElements
  */
+/* global SocketRequest */
 class ElectronHttpTransport extends HTMLElement {
   static get is() {return 'electron-http-transport';}
 
@@ -163,7 +163,15 @@ class ElectronHttpTransport extends HTMLElement {
   }
 
   _prepareRequest(request, opts) {
-    const conn = new SocketRequest(request, opts);
+    let conn;
+    // In ARC electron the browser window is created without node integration
+    // and therefore require is disabled. In tests node is enabled.
+    if (typeof SocketRequest === 'undefined') {
+      const {SocketRequest} = require('@advanced-rest-client/electron-request');
+      conn = new SocketRequest(request, opts);
+    } else {
+      conn = new SocketRequest(request, opts);
+    }
     this._connections[request.id] = {
       connection: conn,
       aborted: false
