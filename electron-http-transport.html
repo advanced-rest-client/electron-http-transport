@@ -12,6 +12,46 @@
 class ElectronHttpTransport extends HTMLElement {
   static get is() {return 'electron-http-transport';}
 
+  get requestTimeout() {
+    const rt = this.getAttribute('request-timeout');
+    if (!rt || isNaN(rt)) {
+      return;
+    }
+    return Number(rt);
+  }
+
+  set requestTimeout(value) {
+    if (!value) {
+      this.removeAttribute('request-timeout');
+    } else {
+      this.setAttribute('request-timeout', value);
+    }
+  }
+
+  get nativeTransport() {
+    return this.hasAttribute('native-transport');
+  }
+
+  set nativeTransport(value) {
+    if (!value) {
+      this.removeAttribute('native-transport');
+    } else {
+      this.setAttribute('native-transport', '');
+    }
+  }
+
+  get validateCertificates() {
+    return this.hasAttribute('validate-certificates');
+  }
+
+  set validateCertificates(value) {
+    if (!value) {
+      this.removeAttribute('validate-certificates');
+    } else {
+      this.setAttribute('validate-certificates', '');
+    }
+  }
+
   constructor() {
     super();
     // Socket handlers
@@ -70,70 +110,43 @@ class ElectronHttpTransport extends HTMLElement {
    * @param {Object} request ARC request object
    * @param {?Object} opts Additional request options:
    * - timeout {Number} - Timeout in milliseconds
-   * - followRedirects {Boolean}
-   * Note, as of ARC 13 this object is part of the request object under
-   * `config` property.
+   * - followRedirects {Boolean} Note, as of ARC 13 this object is part of
+   * the request object under `config` property.
    * @return {Promise} A promise when the request is started with the socket
    * library
    */
   run(request, opts) {
-    if (!opts && request.config) {
-      opts = request.config;
-    }
-    if (!opts) {
-      opts = {};
-    }
-    return this._readTimeout(opts)
-    .then((timeout) => {
-      opts.timeout = timeout;
-      return this._readHosts();
-    })
+    opts = this._prepareRequestOptions(request, opts);
+    return this._readHosts()
     .then((hosts) => {
       opts.hosts = hosts;
       return this._prepareRequest(request, opts);
     })
     .then((connection) => this._makeConnection(connection));
   }
-  /**
-   * Reads request timeout settings.
-   * If `timeout` is set on `opts` then it returns this timeout.
-   * Then it reads global settings for the application and reads
-   * `requestDefaultTimeout` property. By default it returns `0`.
-   * @param {Object} opts Request options
-   * @return {Promise<Number>} Time in milliseconds
-   */
-  _readTimeout(opts) {
-    if (typeof opts.timeout === 'number') {
-      return Promise.resolve(opts.timeout);
+
+  _prepareRequestOptions(request, opts) {
+    if (!opts && request.config) {
+      opts = request.config;
     }
-    const e = new CustomEvent('settings-read', {
-      bubbles: true,
-      composed: true,
-      cancelable: true,
-      detail: {
-        settings: ['requestDefaultTimeout']
+    if (!opts) {
+      opts = {};
+    }
+    if (typeof opts.timeout === 'undefined') {
+      let time = this.requestTimeout;
+      if (time) {
+        opts.timeout = time;
       }
-    });
-    this.dispatchEvent(e);
-    if (e.defaultPrevented) {
-      return e.detail.result
-      .then((settings) => {
-        if (!settings) {
-          settings = {};
-        }
-        if (!settings.requestDefaultTimeout) {
-          return 0;
-        }
-        let time = Number(settings.requestDefaultTimeout);
-        if (time !== time) {
-          time = 0;
-        }
-        // This time is in seconds
-        return time * 1000;
-      });
-    } else {
-      return Promise.resolve(0);
     }
+    if (opts.timeout) {
+      opts.timeout = opts.timeout * 1000;
+    } else {
+      opts.timeout = 0;
+    }
+    if (!opts.validateCertificates) {
+      opts.validateCertificates = this.validateCertificates;
+    }
+    return opts;
   }
   /**
    * Reads application hosts configuration and returns it.
@@ -163,6 +176,12 @@ class ElectronHttpTransport extends HTMLElement {
   }
 
   _prepareRequest(request, opts) {
+    return this.nativeTransport ?
+      this._prepareNativeRequest(request, opts) :
+      this._prepareArcRequest(request, opts);
+  }
+
+  _prepareArcRequest(request, opts) {
     let conn;
     // In ARC electron the browser window is created without node integration
     // and therefore require is disabled. In tests node is enabled.
