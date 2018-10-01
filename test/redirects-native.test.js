@@ -2,7 +2,7 @@ const {RedirectsServer} = require('./redirects-server');
 const {DomHelper} = require('./dom-helper');
 const assert = require('chai').assert;
 
-describe('Redirects', function() {
+describe('Redirects native', function() {
   let server;
   let port;
   let sslPort;
@@ -72,35 +72,8 @@ describe('Redirects', function() {
         method: 'GET',
         id: rId,
         config: {
-          followRedirects: true
-        }
-      });
-    });
-
-    it('Makes absolute redirect - https', function(done) {
-      const url = `https://127.0.0.1:${sslPort}/single-absolute-redirect`;
-      const rId = getRequestId();
-      window.addEventListener('report-response', function f(e) {
-        if (e.detail.id !== rId) {
-          return;
-        }
-        window.removeEventListener('report-response', f);
-        const data = e.detail;
-        assert.isFalse(data.isError);
-        assert.typeOf(data.redirects, 'array');
-        assert.lengthOf(data.redirects, 1);
-        assert.typeOf(data.redirectTimings, 'array');
-        assert.lengthOf(data.redirectTimings, 1);
-        assertRedirectStructure(data.redirects[0]);
-        assertTimingsStructure(data.redirectTimings[0]);
-        done();
-      });
-      DomHelper.fire({
-        url: url,
-        method: 'GET',
-        id: rId,
-        config: {
-          followRedirects: true
+          followRedirects: true,
+          nativeTransport: true
         }
       });
     });
@@ -133,7 +106,8 @@ describe('Redirects', function() {
         method: 'GET',
         id: requestId,
         config: {
-          followRedirects: true
+          followRedirects: true,
+          nativeTransport: true
         }
       });
     });
@@ -164,7 +138,8 @@ describe('Redirects', function() {
         method: 'GET',
         id: requestId,
         config: {
-          followRedirects: true
+          followRedirects: true,
+          nativeTransport: true
         }
       });
     });
@@ -188,7 +163,8 @@ describe('Redirects', function() {
         method: 'GET',
         id: requestId,
         config: {
-          followRedirects: false
+          followRedirects: false,
+          nativeTransport: true
         }
       });
     });
@@ -209,7 +185,7 @@ describe('Redirects', function() {
         assert.lengthOf(data.redirectTimings, 1);
         assertRedirectStructure(data.redirects[0]);
         assertTimingsStructure(data.redirectTimings[0]);
-        assert.notEqual(data.redirects[0].headers.indexOf('Location: /redirect-target'), -1);
+        assert.notEqual(data.redirects[0].headers.indexOf('location: /redirect-target'), -1);
         done();
       });
       DomHelper.fire({
@@ -217,7 +193,8 @@ describe('Redirects', function() {
         method: 'GET',
         id: rId,
         config: {
-          followRedirects: true
+          followRedirects: true,
+          nativeTransport: true
         }
       });
     });
@@ -246,7 +223,8 @@ describe('Redirects', function() {
         method: 'GET',
         id: requestId,
         config: {
-          followRedirects: true
+          followRedirects: true,
+          nativeTransport: true
         }
       });
     });
@@ -280,7 +258,8 @@ describe('Redirects', function() {
         method: 'GET',
         id: rId,
         config: {
-          followRedirects: true
+          followRedirects: true,
+          nativeTransport: true
         }
       });
     });
