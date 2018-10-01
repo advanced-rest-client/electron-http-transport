@@ -38,7 +38,7 @@ describe('Native request tests', function() {
         assert.isFalse(data.isXhr);
         assert.typeOf(data.loadingTime, 'number');
         assert.typeOf(data.sentHttpMessage, 'string');
-        assert.typeOf(data.timings, 'object');
+        assert.typeOf(data.timing, 'object');
         const resp = data.response;
         assert.typeOf(resp.headers, 'string');
         assert.typeOf(resp.statusText, 'string');
@@ -71,7 +71,7 @@ describe('Native request tests', function() {
         assert.isFalse(data.isXhr);
         assert.typeOf(data.loadingTime, 'number');
         assert.typeOf(data.sentHttpMessage, 'string');
-        assert.typeOf(data.timings, 'object');
+        assert.typeOf(data.timing, 'object');
         const resp = data.response;
         assert.typeOf(resp.headers, 'string');
         assert.typeOf(resp.statusText, 'string');

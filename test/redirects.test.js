@@ -61,10 +61,10 @@ describe('Redirects', function() {
         assert.isFalse(data.isError);
         assert.typeOf(data.redirects, 'array');
         assert.lengthOf(data.redirects, 1);
-        assert.typeOf(data.redirectTimings, 'array');
-        assert.lengthOf(data.redirectTimings, 1);
+        assert.typeOf(data.redirectsTiming, 'array');
+        assert.lengthOf(data.redirectsTiming, 1);
         assertRedirectStructure(data.redirects[0]);
-        assertTimingsStructure(data.redirectTimings[0]);
+        assertTimingsStructure(data.redirectsTiming[0]);
         done();
       });
       DomHelper.fire({
@@ -89,10 +89,10 @@ describe('Redirects', function() {
         assert.isFalse(data.isError);
         assert.typeOf(data.redirects, 'array');
         assert.lengthOf(data.redirects, 1);
-        assert.typeOf(data.redirectTimings, 'array');
-        assert.lengthOf(data.redirectTimings, 1);
+        assert.typeOf(data.redirectsTiming, 'array');
+        assert.lengthOf(data.redirectsTiming, 1);
         assertRedirectStructure(data.redirects[0]);
-        assertTimingsStructure(data.redirectTimings[0]);
+        assertTimingsStructure(data.redirectsTiming[0]);
         done();
       });
       DomHelper.fire({
@@ -155,7 +155,7 @@ describe('Redirects', function() {
         window.removeEventListener('report-response', f);
         const data = e.detail;
         assert.isUndefined(data.redirects);
-        assert.isUndefined(data.redirectTimings);
+        assert.isUndefined(data.redirectsTiming);
         assert.equal(data.response.status, 301);
         done();
       });
@@ -179,7 +179,7 @@ describe('Redirects', function() {
         window.removeEventListener('report-response', f);
         const data = e.detail;
         assert.isUndefined(data.redirects);
-        assert.isUndefined(data.redirectTimings);
+        assert.isUndefined(data.redirectsTiming);
         assert.equal(data.response.status, 301);
         done();
       });
@@ -205,10 +205,10 @@ describe('Redirects', function() {
         assert.isFalse(data.isError);
         assert.typeOf(data.redirects, 'array');
         assert.lengthOf(data.redirects, 1);
-        assert.typeOf(data.redirectTimings, 'array');
-        assert.lengthOf(data.redirectTimings, 1);
+        assert.typeOf(data.redirectsTiming, 'array');
+        assert.lengthOf(data.redirectsTiming, 1);
         assertRedirectStructure(data.redirects[0]);
-        assertTimingsStructure(data.redirectTimings[0]);
+        assertTimingsStructure(data.redirectsTiming[0]);
         assert.notEqual(data.redirects[0].headers.indexOf('Location: /redirect-target'), -1);
         done();
       });
@@ -267,12 +267,12 @@ describe('Redirects', function() {
         assert.isFalse(data.isError);
         assert.typeOf(data.redirects, 'array');
         assert.lengthOf(data.redirects, 4);
-        assert.typeOf(data.redirectTimings, 'array');
-        assert.lengthOf(data.redirectTimings, 4);
+        assert.typeOf(data.redirectsTiming, 'array');
+        assert.lengthOf(data.redirectsTiming, 4);
         assertRedirectStructure(data.redirects[0]);
-        assertTimingsStructure(data.redirectTimings[0]);
+        assertTimingsStructure(data.redirectsTiming[0]);
         assertRedirectStructure(data.redirects[3]);
-        assertTimingsStructure(data.redirectTimings[3]);
+        assertTimingsStructure(data.redirectsTiming[3]);
         done();
       });
       DomHelper.fire({

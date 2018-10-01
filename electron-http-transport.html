@@ -403,7 +403,7 @@ class ElectronHttpTransport extends HTMLElement {
     };
     const redirects = this._processRedirects(data.redirects);
     if (redirects.timings.length) {
-      detail.redirectTimings = redirects.timings;
+      detail.redirectsTiming = redirects.timings;
       detail.redirects = redirects.redirects;
     }
     if (data.error && typeof data.error !== 'function') {
@@ -415,7 +415,7 @@ class ElectronHttpTransport extends HTMLElement {
       detail.response = data;
       detail.sentHttpMessage = data.sentHttpMessage;
       detail.loadingTime = this._computeLoadingTime(stats);
-      detail.timings = stats;
+      detail.timing = stats;
       detail.auth = data.auth;
       delete detail.response.sentHttpMessage;
       delete detail.request.sentHttpMessage;
