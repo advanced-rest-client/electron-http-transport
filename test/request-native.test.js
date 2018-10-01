@@ -2,16 +2,14 @@ const {DataServer} = require('./data-server');
 const {DomHelper} = require('./dom-helper');
 const assert = require('chai').assert;
 
-describe('Request tests', function() {
+describe('Native request tests', function() {
   let server;
   let port;
-  let sslPort;
   before(() => {
     server = new DataServer();
     return server.startServer()
     .then((result) => {
       port = result[0];
-      sslPort = result[1];
     })
     .then(() => DomHelper.injectElement());
   });
@@ -52,12 +50,14 @@ describe('Request tests', function() {
       DomHelper.fire({
         url: url,
         method: 'GET',
-        id: rId
+        id: rId,
+        config: {
+          nativeTransport: true
+        }
       });
     });
 
     it('Reads request over SSL', function(done) {
-      const url = `https://127.0.0.1:${sslPort}/json`;
       const rId = getRequestId();
       window.addEventListener('report-response', function f(e) {
         if (e.detail.id !== rId) {
@@ -81,9 +81,12 @@ describe('Request tests', function() {
         done();
       });
       DomHelper.fire({
-        url: url,
+        url: 'https://www.google.com',
         method: 'GET',
-        id: rId
+        id: rId,
+        config: {
+          nativeTransport: true
+        }
       });
     });
 
@@ -102,7 +105,10 @@ describe('Request tests', function() {
       DomHelper.fire({
         url: url,
         method: 'GET',
-        id: rId
+        id: rId,
+        config: {
+          nativeTransport: true
+        }
       });
     });
 
@@ -122,7 +128,10 @@ describe('Request tests', function() {
       DomHelper.fire({
         url: url,
         method: 'GET',
-        id: rId
+        id: rId,
+        config: {
+          nativeTransport: true
+        }
       });
     });
 
@@ -136,16 +145,19 @@ describe('Request tests', function() {
         window.removeEventListener('report-response', f);
         const data = e.detail;
         assert.notEqual(data.response.headers.indexOf('x-header-1: test-value'), -1);
-        assert.notEqual(data.response.headers.indexOf('Server: test.com'), -1);
-        assert.notEqual(data.response.headers.indexOf('Cache-Control: no-cache'), -1);
-        assert.notEqual(data.response.headers.indexOf('Set-Cookie: c=v'), -1);
-        assert.notEqual(data.response.headers.indexOf('X-Frame-Options: deny'), -1);
+        assert.notEqual(data.response.headers.indexOf('server: test.com'), -1);
+        assert.notEqual(data.response.headers.indexOf('cache-control: no-cache'), -1);
+        assert.notEqual(data.response.headers.indexOf('set-cookie: c=v'), -1);
+        assert.notEqual(data.response.headers.indexOf('x-frame-options: deny'), -1);
         done();
       });
       DomHelper.fire({
         url: url,
         method: 'GET',
-        id: rId
+        id: rId,
+        config: {
+          nativeTransport: true
+        }
       });
     });
   });
