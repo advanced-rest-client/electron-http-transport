@@ -83,7 +83,11 @@ class ElectronHttpTransport extends HTMLElement {
   }
 
   get sentMessageLimit() {
-    return this.hasAttribute('sent-message-limit');
+    const v = this.getAttribute('sent-message-limit');
+    if (!v || isNaN(v)) {
+      return;
+    }
+    return Number(v);
   }
 
   constructor() {
