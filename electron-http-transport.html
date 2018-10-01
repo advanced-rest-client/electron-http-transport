@@ -8,7 +8,7 @@
  * @customElement
  * @memberof LogicElements
  */
-/* global SocketRequest */
+/* global SocketRequest, ElectronRequest */
 class ElectronHttpTransport extends HTMLElement {
   static get is() {return 'electron-http-transport';}
 
@@ -43,13 +43,47 @@ class ElectronHttpTransport extends HTMLElement {
   get validateCertificates() {
     return this.hasAttribute('validate-certificates');
   }
-
+  /**
+   * When set it validates certificates during request.
+   * @param {Boolean} value
+   */
   set validateCertificates(value) {
     if (!value) {
       this.removeAttribute('validate-certificates');
     } else {
       this.setAttribute('validate-certificates', '');
     }
+  }
+  /**
+   * When not set the request object won't follow redirects.
+   * @param {Boolean} value
+   */
+  set followRedirects(value) {
+    if (!value) {
+      this.removeAttribute('follow-redirects');
+    } else {
+      this.setAttribute('follow-redirects', '');
+    }
+  }
+
+  get followRedirects() {
+    return this.hasAttribute('follow-redirects');
+  }
+  /**
+   * A limit of characters to include into the `sentHttpMessage` property
+   * of the request object. 0 to disable limit. Default to 2048.
+   * @param {Number} value
+   */
+  set sentMessageLimit(value) {
+    if (!value) {
+      this.removeAttribute('sent-message-limit');
+    } else {
+      this.setAttribute('sent-message-limit', value);
+    }
+  }
+
+  get sentMessageLimit() {
+    return this.hasAttribute('sent-message-limit');
   }
 
   constructor() {
@@ -122,7 +156,8 @@ class ElectronHttpTransport extends HTMLElement {
       opts.hosts = hosts;
       return this._prepareRequest(request, opts);
     })
-    .then((connection) => this._makeConnection(connection));
+    .then((connection) => this._makeConnection(connection))
+    .catch((cause) => this._errorHandler(cause, request.id));
   }
 
   _prepareRequestOptions(request, opts) {
@@ -133,18 +168,26 @@ class ElectronHttpTransport extends HTMLElement {
       opts = {};
     }
     if (typeof opts.timeout === 'undefined') {
-      let time = this.requestTimeout;
+      const time = this.requestTimeout;
       if (time) {
         opts.timeout = time;
       }
     }
     if (opts.timeout) {
-      opts.timeout = opts.timeout * 1000;
+      if (opts.timeout < 120) {
+        opts.timeout = opts.timeout * 1000;
+      }
     } else {
       opts.timeout = 0;
     }
     if (!opts.validateCertificates) {
       opts.validateCertificates = this.validateCertificates;
+    }
+    if (typeof opts.followRedirects === 'undefined') {
+      opts.followRedirects = this.followRedirects;
+    }
+    if (typeof opts.sentMessageLimit === 'undefined') {
+      opts.sentMessageLimit = this.sentMessageLimit;
     }
     return opts;
   }
@@ -175,8 +218,15 @@ class ElectronHttpTransport extends HTMLElement {
     });
   }
 
+  _isNative(opts) {
+    if (opts && typeof opts.nativeTransport === 'boolean') {
+      return opts.nativeTransport;
+    }
+    return this.nativeTransport;
+  }
+
   _prepareRequest(request, opts) {
-    return this.nativeTransport ?
+    return this._isNative(opts) ?
       this._prepareNativeRequest(request, opts) :
       this._prepareArcRequest(request, opts);
   }
@@ -205,10 +255,34 @@ class ElectronHttpTransport extends HTMLElement {
     return conn;
   }
 
+  _prepareNativeRequest(request, opts) {
+    let conn;
+    // In ARC electron the browser window is created without node integration
+    // and therefore require is disabled. In tests node is enabled.
+    if (typeof ElectronRequest === 'undefined') {
+      const {ElectronRequest} = require('@advanced-rest-client/electron-request');
+      conn = new ElectronRequest(request, opts);
+    } else {
+      conn = new ElectronRequest(request, opts);
+    }
+    this._connections[request.id] = {
+      connection: conn,
+      aborted: false
+    };
+    conn.on('loadstart', this._loadStartHandler);
+    conn.on('firstbyte', this._firstByteHandler);
+    conn.on('loadend', this._loadEndHandler);
+    conn.on('beforeredirect', this._beforeRedirectHandler);
+    conn.on('headersreceived', this._headersReceivedHandler);
+    conn.on('load', this._loadHandler);
+    conn.on('error', this._errorHandler);
+    return conn;
+  }
+
   _makeConnection(connection) {
     return connection.send()
     .catch((cause) => {
-      this._errorHandler(connection.id, cause);
+      this._errorHandler(cause, connection.id);
     });
   }
 
@@ -298,7 +372,7 @@ class ElectronHttpTransport extends HTMLElement {
     this._processResponse(id, response, request);
   }
 
-  _errorHandler(id, cause, request, response) {
+  _errorHandler(cause, id, request, response) {
     const info = this._connections[id];
     if (info) {
       this._removeConnectionHandlers(info.connection);
