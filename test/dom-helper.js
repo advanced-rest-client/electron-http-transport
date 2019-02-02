@@ -23,6 +23,10 @@ class DomHelper {
     }
   }
 
+  static getElement() {
+    return document.querySelector('electron-http-transport');
+  }
+
   static fire(detail, type) {
     type = type || 'transport-request';
     const e = new CustomEvent(type, {

@@ -8,8 +8,8 @@
  * @customElement
  * @memberof LogicElements
  */
-/* global SocketRequest, ElectronRequest */
 class ElectronHttpTransport extends HTMLElement {
+  /* global SocketRequest, ElectronRequest */
   static get is() {return 'electron-http-transport';}
 
   get requestTimeout() {
@@ -165,12 +165,9 @@ class ElectronHttpTransport extends HTMLElement {
   }
 
   _prepareRequestOptions(request, opts) {
-    if (!opts && request.config) {
-      opts = request.config;
-    }
-    if (!opts) {
-      opts = {};
-    }
+    const rConfig = Object.assign({}, request.config || {});
+    opts = Object.assign({}, opts || {});
+    opts = Object.assign(rConfig, opts);
     if (typeof opts.timeout === 'undefined') {
       const time = this.requestTimeout;
       if (time) {
